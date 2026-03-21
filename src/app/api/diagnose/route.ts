@@ -67,7 +67,7 @@ export async function POST(req: Request) {
   });
 
   const { object } = await generateObject({
-    model: google("gemini-3.1-pro-preview"),
+    model: google("gemini-2.5-pro"),
     schema: diagnosisResultSchema,
     system: SYSTEM_PROMPT,
     messages: [

@@ -6,18 +6,11 @@ import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EvidenceUpload } from "@/components/evidence-upload";
+import type { EvidenceItem } from "@/components/evidence-upload";
 import { DiagnosisCard } from "@/components/diagnosis-card";
 import { ChatDrawer } from "@/components/chat-drawer";
 import { createClient } from "@/lib/supabase/client";
 import type { Diagnosis } from "@/types/diagnosis";
-
-interface EvidenceItem {
-  id: string;
-  type: "photo" | "audio" | "document";
-  label: string;
-  file: File;
-  storage_path: string;
-}
 
 export default function HomeDashboard() {
   const params = useParams();

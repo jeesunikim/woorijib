@@ -1,16 +1,14 @@
 // src/components/evidence-upload.tsx
 "use client";
 
-import { useState, useCallback } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useCallback, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 
-interface EvidenceItem {
+export interface EvidenceItem {
   id: string;
   type: "photo" | "audio" | "document";
   label: string;
-  file: File;
   storage_path: string;
 }
 
@@ -28,7 +26,39 @@ function detectType(file: File): "photo" | "audio" | "document" {
 export function EvidenceUpload({ homeId, onEvidenceChange }: EvidenceUploadProps) {
   const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const supabase = createClient();
+
+  // Load existing evidence for this home on mount
+  useEffect(() => {
+    if (loaded) return;
+    async function loadExisting() {
+      const { data, error } = await supabase
+        .from("evidence")
+        .select("id, type, label, storage_path")
+        .eq("home_id", homeId)
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("Failed to load evidence:", error);
+        setLoaded(true);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const items: EvidenceItem[] = data.map((row) => ({
+          id: row.id,
+          type: row.type as "photo" | "audio" | "document",
+          label: row.label || "Untitled",
+          storage_path: row.storage_path,
+        }));
+        setEvidence(items);
+        onEvidenceChange(items);
+      }
+      setLoaded(true);
+    }
+    loadExisting();
+  }, [homeId, loaded]);
 
   const handleFiles = useCallback(
     async (files: FileList) => {
@@ -39,7 +69,6 @@ export function EvidenceUpload({ homeId, onEvidenceChange }: EvidenceUploadProps
         const type = detectType(file);
         const storagePath = `${homeId}/${Date.now()}-${file.name}`;
 
-        // Upload to Supabase Storage
         const { error: uploadError } = await supabase.storage
           .from("evidence-files")
           .upload(storagePath, file);
@@ -49,7 +78,6 @@ export function EvidenceUpload({ homeId, onEvidenceChange }: EvidenceUploadProps
           continue;
         }
 
-        // Create evidence record
         const { data, error } = await supabase
           .from("evidence")
           .insert({
@@ -70,7 +98,6 @@ export function EvidenceUpload({ homeId, onEvidenceChange }: EvidenceUploadProps
           id: data.id,
           type,
           label: file.name,
-          file,
           storage_path: storagePath,
         });
       }
@@ -124,7 +151,7 @@ export function EvidenceUpload({ homeId, onEvidenceChange }: EvidenceUploadProps
 
       {evidence.length > 0 && (
         <div className="space-y-2">
-          <p className="text-sm font-medium">{evidence.length} file(s) uploaded</p>
+          <p className="text-sm font-medium">{evidence.length} file(s) loaded</p>
           {evidence.map((item) => (
             <div
               key={item.id}

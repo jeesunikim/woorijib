@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   const { messages, context } = await req.json();
 
   const result = streamText({
-    model: google("gemini-3.1-pro-preview"),
+    model: google("gemini-2.5-pro"),
     system: `${SYSTEM_PROMPT}
 
 The homeowner has already received diagnoses for their home. Here is the context of their home and prior diagnoses:
