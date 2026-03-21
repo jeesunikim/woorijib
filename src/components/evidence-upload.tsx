@@ -3,6 +3,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 export interface EvidenceItem {
@@ -110,6 +111,17 @@ export function EvidenceUpload({ homeId, onEvidenceChange }: EvidenceUploadProps
     [evidence, homeId, onEvidenceChange, supabase]
   );
 
+  async function handleDelete(item: EvidenceItem) {
+    // Delete from storage
+    await supabase.storage.from("evidence-files").remove([item.storage_path]);
+    // Delete from database
+    await supabase.from("evidence").delete().eq("id", item.id);
+    // Update local state
+    const updated = evidence.filter((e) => e.id !== item.id);
+    setEvidence(updated);
+    onEvidenceChange(updated);
+  }
+
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     if (e.dataTransfer.files.length > 0) {
@@ -160,7 +172,15 @@ export function EvidenceUpload({ homeId, onEvidenceChange }: EvidenceUploadProps
               <span className="capitalize text-xs font-mono bg-background px-1.5 py-0.5 rounded">
                 {item.type}
               </span>
-              <span className="truncate">{item.label}</span>
+              <span className="truncate flex-1">{item.label}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                onClick={() => handleDelete(item)}
+              >
+                x
+              </Button>
             </div>
           ))}
         </div>

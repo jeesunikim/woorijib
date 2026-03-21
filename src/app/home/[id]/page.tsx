@@ -1,16 +1,24 @@
 // src/app/home/[id]/page.tsx
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { PhaseSelector } from "@/components/phase-selector";
 import { EvidenceUpload } from "@/components/evidence-upload";
 import type { EvidenceItem } from "@/components/evidence-upload";
 import { DiagnosisCard } from "@/components/diagnosis-card";
 import { ChatDrawer } from "@/components/chat-drawer";
 import { createClient } from "@/lib/supabase/client";
 import type { Diagnosis } from "@/types/diagnosis";
+
+interface SavedSession {
+  id: string;
+  diagnoses: Diagnosis[];
+  created_at: string;
+}
 
 export default function HomeDashboard() {
   const params = useParams();
@@ -19,12 +27,50 @@ export default function HomeDashboard() {
 
   const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
   const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
+  const [pastSessions, setPastSessions] = useState<SavedSession[]>([]);
+  const [viewingSessionId, setViewingSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Load all saved diagnosis sessions on mount
+  useEffect(() => {
+    async function loadSessions() {
+      const { data } = await supabase
+        .from("diagnoses")
+        .select("id, result, created_at")
+        .eq("home_id", homeId)
+        .order("created_at", { ascending: false });
+
+      if (data && data.length > 0) {
+        const sessions: SavedSession[] = data.map((row) => ({
+          id: row.id,
+          diagnoses: row.result?.diagnoses || [],
+          created_at: row.created_at,
+        }));
+        setPastSessions(sessions);
+        // Show most recent by default
+        setDiagnoses(sessions[0].diagnoses);
+        setViewingSessionId(sessions[0].id);
+      }
+    }
+    loadSessions();
+  }, [homeId]);
 
   const handleEvidenceChange = useCallback((items: EvidenceItem[]) => {
     setEvidence(items);
   }, []);
+
+  function handleNewSession() {
+    setDiagnoses([]);
+    setViewingSessionId(null);
+    setError(null);
+  }
+
+  function handleViewSession(session: SavedSession) {
+    setDiagnoses(session.diagnoses);
+    setViewingSessionId(session.id);
+    setError(null);
+  }
 
   async function handleDiagnose() {
     if (evidence.length === 0) return;
@@ -53,16 +99,25 @@ export default function HomeDashboard() {
       if (data.diagnoses) {
         setDiagnoses(data.diagnoses);
         // Persist to Supabase
-        supabase
+        const { data: inserted } = await supabase
           .from("diagnoses")
           .insert({
             home_id: homeId,
             evidence_ids: evidence.map((e) => e.id),
             result: data,
           })
-          .then(({ error }) => {
-            if (error) console.error("Failed to save diagnosis:", error);
-          });
+          .select("id, created_at")
+          .single();
+
+        if (inserted) {
+          const newSession: SavedSession = {
+            id: inserted.id,
+            diagnoses: data.diagnoses,
+            created_at: inserted.created_at,
+          };
+          setPastSessions((prev) => [newSession, ...prev]);
+          setViewingSessionId(inserted.id);
+        }
       }
     } catch (err) {
       setError(`Diagnosis error: ${err}`);
@@ -86,31 +141,64 @@ export default function HomeDashboard() {
           </p>
         </div>
 
-        {/* Phase Indicator */}
-        <div className="flex items-center gap-2">
-          <Badge variant="outline">Phase</Badge>
-          <Badge>Inspection Complete</Badge>
-        </div>
+        {/* Phase Selector */}
+        <PhaseSelector current="inspection_complete" />
 
-        {/* Evidence Upload */}
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold">Evidence</h2>
-          <p className="text-sm text-muted-foreground">
-            Add your inspection photos, contractor audio, and documents.
-          </p>
-          <EvidenceUpload homeId={homeId} onEvidenceChange={handleEvidenceChange} />
-        </section>
+        {/* Past Sessions */}
+        {pastSessions.length > 0 && (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Diagnosis History</h2>
+              <Button variant="outline" size="sm" onClick={handleNewSession}>
+                + New Diagnosis
+              </Button>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {pastSessions.map((session) => (
+                <Badge
+                  key={session.id}
+                  variant={viewingSessionId === session.id ? "default" : "outline"}
+                  className="cursor-pointer"
+                  onClick={() => handleViewSession(session)}
+                >
+                  {new Date(session.created_at).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                  {" "}({session.diagnoses.length} issues)
+                </Badge>
+              ))}
+            </div>
+          </section>
+        )}
 
-        {/* Diagnose Button */}
-        {evidence.length > 0 && (
-          <Button
-            size="lg"
-            onClick={handleDiagnose}
-            disabled={isLoading}
-            className="w-full"
-          >
-            {isLoading ? "Analyzing evidence..." : `Diagnose (${evidence.length} files)`}
-          </Button>
+        <Separator />
+
+        {/* Evidence Upload — show when no session is being viewed */}
+        {!viewingSessionId && (
+          <>
+            <section className="space-y-3">
+              <h2 className="text-xl font-semibold">Evidence</h2>
+              <p className="text-sm text-muted-foreground">
+                Add your inspection photos, contractor audio, and documents.
+              </p>
+              <EvidenceUpload homeId={homeId} onEvidenceChange={handleEvidenceChange} />
+            </section>
+
+            {/* Diagnose Button */}
+            {evidence.length > 0 && (
+              <Button
+                size="lg"
+                onClick={handleDiagnose}
+                disabled={isLoading}
+                className="w-full"
+              >
+                {isLoading ? "Analyzing evidence..." : `Diagnose (${evidence.length} files)`}
+              </Button>
+            )}
+          </>
         )}
 
         {/* Error */}
@@ -119,16 +207,62 @@ export default function HomeDashboard() {
         )}
 
         {/* Diagnosis Results */}
-        {diagnoses.length > 0 && (
-          <section className="space-y-4">
-            <h2 className="text-xl font-semibold">
-              Diagnosis ({diagnoses.length} issue{diagnoses.length !== 1 ? "s" : ""} found)
-            </h2>
-            {diagnoses.map((d, i) => (
-              <DiagnosisCard key={i} diagnosis={d} />
-            ))}
-          </section>
-        )}
+        {diagnoses.length > 0 && (() => {
+          const severityOrder = { critical: 0, moderate: 1, minor: 2 };
+          const sorted = [...diagnoses].sort(
+            (a, b) => (severityOrder[a.severity] ?? 3) - (severityOrder[b.severity] ?? 3)
+          );
+          const critical = sorted.filter((d) => d.severity === "critical");
+          const moderate = sorted.filter((d) => d.severity === "moderate");
+          const minor = sorted.filter((d) => d.severity === "minor");
+
+          return (
+            <section className="space-y-6">
+              <h2 className="text-xl font-semibold">
+                Diagnosis ({diagnoses.length} issue{diagnoses.length !== 1 ? "s" : ""} found)
+              </h2>
+
+              {/* Summary counts */}
+              <div className="flex gap-3">
+                {critical.length > 0 && (
+                  <Badge className="bg-red-100 text-red-800 border-red-200">
+                    {critical.length} Critical
+                  </Badge>
+                )}
+                {moderate.length > 0 && (
+                  <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                    {moderate.length} Moderate
+                  </Badge>
+                )}
+                {minor.length > 0 && (
+                  <Badge className="bg-green-100 text-green-800 border-green-200">
+                    {minor.length} Minor
+                  </Badge>
+                )}
+              </div>
+
+              {/* Cards grouped by severity */}
+              {critical.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-red-700 uppercase tracking-wide">Critical</h3>
+                  {critical.map((d, i) => <DiagnosisCard key={`c-${i}`} diagnosis={d} />)}
+                </div>
+              )}
+              {moderate.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-yellow-700 uppercase tracking-wide">Moderate</h3>
+                  {moderate.map((d, i) => <DiagnosisCard key={`m-${i}`} diagnosis={d} />)}
+                </div>
+              )}
+              {minor.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-green-700 uppercase tracking-wide">Minor</h3>
+                  {minor.map((d, i) => <DiagnosisCard key={`n-${i}`} diagnosis={d} />)}
+                </div>
+              )}
+            </section>
+          );
+        })()}
       </div>
 
       {/* Chat Drawer */}
