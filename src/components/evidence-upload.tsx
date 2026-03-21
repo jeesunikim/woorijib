@@ -16,6 +16,7 @@ export interface EvidenceItem {
 interface EvidenceUploadProps {
   homeId: string;
   onEvidenceChange: (evidence: EvidenceItem[]) => void;
+  keepTypes?: ("photo" | "audio" | "document")[];
 }
 
 function detectType(file: File): "photo" | "audio" | "document" {
@@ -24,7 +25,7 @@ function detectType(file: File): "photo" | "audio" | "document" {
   return "document";
 }
 
-export function EvidenceUpload({ homeId, onEvidenceChange }: EvidenceUploadProps) {
+export function EvidenceUpload({ homeId, onEvidenceChange, keepTypes }: EvidenceUploadProps) {
   const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
   const [uploading, setUploading] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -47,7 +48,11 @@ export function EvidenceUpload({ homeId, onEvidenceChange }: EvidenceUploadProps
       }
 
       if (data && data.length > 0) {
-        const items: EvidenceItem[] = data.map((row) => ({
+        let filtered = data;
+        if (keepTypes) {
+          filtered = data.filter((row) => keepTypes.includes(row.type as "photo" | "audio" | "document"));
+        }
+        const items: EvidenceItem[] = filtered.map((row) => ({
           id: row.id,
           type: row.type as "photo" | "audio" | "document",
           label: row.label || "Untitled",

@@ -29,6 +29,7 @@ export default function HomeDashboard() {
   const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
   const [pastSessions, setPastSessions] = useState<SavedSession[]>([]);
   const [viewingSessionId, setViewingSessionId] = useState<string | null>(null);
+  const [resetKey, setResetKey] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,6 +65,16 @@ export default function HomeDashboard() {
     setDiagnoses([]);
     setViewingSessionId(null);
     setError(null);
+    setResetKey((k) => k + 1);
+  }
+
+  async function handleDeleteSession(sessionId: string) {
+    await supabase.from("diagnoses").delete().eq("id", sessionId);
+    setPastSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    if (viewingSessionId === sessionId) {
+      setDiagnoses([]);
+      setViewingSessionId(null);
+    }
   }
 
   function handleViewSession(session: SavedSession) {
@@ -155,20 +166,27 @@ export default function HomeDashboard() {
             </div>
             <div className="flex gap-2 flex-wrap">
               {pastSessions.map((session) => (
-                <Badge
-                  key={session.id}
-                  variant={viewingSessionId === session.id ? "default" : "outline"}
-                  className="cursor-pointer"
-                  onClick={() => handleViewSession(session)}
-                >
-                  {new Date(session.created_at).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
-                  {" "}({session.diagnoses.length} issues)
-                </Badge>
+                <span key={session.id} className="inline-flex items-center gap-1">
+                  <Badge
+                    variant={viewingSessionId === session.id ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => handleViewSession(session)}
+                  >
+                    {new Date(session.created_at).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
+                    {" "}({session.diagnoses.length} issues)
+                  </Badge>
+                  <button
+                    className="text-xs text-muted-foreground hover:text-destructive"
+                    onClick={() => handleDeleteSession(session.id)}
+                  >
+                    x
+                  </button>
+                </span>
               ))}
             </div>
           </section>
@@ -184,7 +202,7 @@ export default function HomeDashboard() {
               <p className="text-sm text-muted-foreground">
                 Add your inspection photos, contractor audio, and documents.
               </p>
-              <EvidenceUpload homeId={homeId} onEvidenceChange={handleEvidenceChange} />
+              <EvidenceUpload key={resetKey} homeId={homeId} onEvidenceChange={handleEvidenceChange} keepTypes={["document"]} />
             </section>
 
             {/* Diagnose Button */}
