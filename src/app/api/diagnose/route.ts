@@ -1,5 +1,5 @@
 import { google } from "@ai-sdk/google";
-import { streamObject } from "ai";
+import { generateObject } from "ai";
 import { diagnosisResultSchema } from "@/types/diagnosis";
 import { SYSTEM_PROMPT } from "@/lib/gemini";
 import { createServerClient } from "@/lib/supabase/server";
@@ -66,8 +66,8 @@ export async function POST(req: Request) {
     text: "\n\nAnalyze all the evidence above. Identify every distinct issue and produce structured diagnoses. Use the evidence IDs when citing sources.",
   });
 
-  const result = streamObject({
-    model: google("gemini-2.5-pro-preview-05-06"),
+  const { object } = await generateObject({
+    model: google("gemini-3.1-pro-preview"),
     schema: diagnosisResultSchema,
     system: SYSTEM_PROMPT,
     messages: [
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
     ],
   });
 
-  return result.toTextStreamResponse();
+  return Response.json(object);
 }
 
 function getMimeType(type: string, path: string): string {

@@ -40,3 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env.local
+
+# private documents
+docs/473*
+docs/home-inspection-report.pdf

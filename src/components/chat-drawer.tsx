@@ -40,13 +40,10 @@ export function ChatDrawer({ context }: ChatDrawerProps) {
 
   return (
     <Sheet>
-      <SheetTrigger>
-        <Button
-          className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg"
-          size="icon"
-        >
-          <span className="text-xl">?</span>
-        </Button>
+      <SheetTrigger
+        className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors"
+      >
+        <span className="text-xl">?</span>
       </SheetTrigger>
       <SheetContent className="w-[400px] sm:w-[540px] flex flex-col">
         <SheetHeader>

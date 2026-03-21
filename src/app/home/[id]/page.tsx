@@ -1,15 +1,13 @@
 // src/app/home/[id]/page.tsx
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EvidenceUpload } from "@/components/evidence-upload";
 import { DiagnosisCard } from "@/components/diagnosis-card";
 import { ChatDrawer } from "@/components/chat-drawer";
-import { diagnosisResultSchema } from "@/types/diagnosis";
 import { createClient } from "@/lib/supabase/client";
 import type { Diagnosis } from "@/types/diagnosis";
 
@@ -27,46 +25,59 @@ export default function HomeDashboard() {
   const supabase = createClient();
 
   const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
-  const [savedDiagnoses, setSavedDiagnoses] = useState<Diagnosis[]>([]);
-
-  const { object, submit, isLoading } = useObject({
-    api: "/api/diagnose",
-    schema: diagnosisResultSchema,
-  });
-
-  // When streaming completes, save to Supabase
-  const currentDiagnoses = object?.diagnoses as Diagnosis[] | undefined;
-  useEffect(() => {
-    if (!isLoading && currentDiagnoses && currentDiagnoses.length > 0) {
-      setSavedDiagnoses(currentDiagnoses);
-      // Persist to Supabase
-      supabase
-        .from("diagnoses")
-        .insert({
-          home_id: homeId,
-          evidence_ids: evidence.map((e) => e.id),
-          result: { diagnoses: currentDiagnoses },
-        })
-        .then(({ error }) => {
-          if (error) console.error("Failed to save diagnosis:", error);
-        });
-    }
-  }, [isLoading, currentDiagnoses]);
+  const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleEvidenceChange = useCallback((items: EvidenceItem[]) => {
     setEvidence(items);
   }, []);
 
-  function handleDiagnose() {
+  async function handleDiagnose() {
     if (evidence.length === 0) return;
-    // useObject sends JSON body — the API route needs to accept this
-    submit({
-      homeId,
-      evidenceIds: evidence.map((e) => e.id),
-    });
+    setIsLoading(true);
+    setError(null);
+    setDiagnoses([]);
+
+    try {
+      const response = await fetch("/api/diagnose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          homeId,
+          evidenceIds: evidence.map((e) => e.id),
+        }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        setError(`Diagnosis failed: ${text}`);
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      if (data.diagnoses) {
+        setDiagnoses(data.diagnoses);
+        // Persist to Supabase
+        supabase
+          .from("diagnoses")
+          .insert({
+            home_id: homeId,
+            evidence_ids: evidence.map((e) => e.id),
+            result: data,
+          })
+          .then(({ error }) => {
+            if (error) console.error("Failed to save diagnosis:", error);
+          });
+      }
+    } catch (err) {
+      setError(`Diagnosis error: ${err}`);
+    }
+
+    setIsLoading(false);
   }
 
-  const diagnoses = (currentDiagnoses || savedDiagnoses) as Diagnosis[];
   const chatContext = diagnoses.length > 0
     ? `Home ID: ${homeId}\n\nDiagnoses:\n${JSON.stringify(diagnoses, null, 2)}`
     : `Home ID: ${homeId}\n\nNo diagnoses yet.`;
@@ -107,6 +118,11 @@ export default function HomeDashboard() {
           >
             {isLoading ? "Analyzing evidence..." : `Diagnose (${evidence.length} files)`}
           </Button>
+        )}
+
+        {/* Error */}
+        {error && (
+          <p className="text-sm text-red-600">{error}</p>
         )}
 
         {/* Diagnosis Results */}
