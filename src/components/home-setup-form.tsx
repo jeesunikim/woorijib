@@ -43,7 +43,7 @@ export function HomeSetupForm() {
         <Label htmlFor="address">Address</Label>
         <Input
           id="address"
-          placeholder="473 Corbett Ave, San Francisco, CA"
+          placeholder="123 Main St, Anytown, CA"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           required
