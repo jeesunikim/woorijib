@@ -44,3 +44,5 @@ next-env.d.ts
 # private documents
 docs/473*
 docs/home-inspection-report.pdf
+docs/IMG_0498.MOV
+*.MOV
