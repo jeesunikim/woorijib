@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   }
 
   // Build multimodal content parts for Gemini
-  const parts: Array<{ type: "text" } & { text: string } | { type: "file"; data: Uint8Array; mimeType: string }> = [];
+  const parts: Array<{ type: "text"; text: string } | { type: "file"; data: Uint8Array; mediaType: string }> = [];
 
   // Add context about which evidence is which
   parts.push({
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     parts.push({
       type: "file" as const,
       data: buffer,
-      mimeType,
+      mediaType: mimeType,
     });
 
     // If there's extracted text (e.g., prior transcription), include it

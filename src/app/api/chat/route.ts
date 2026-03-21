@@ -1,6 +1,6 @@
 // src/app/api/chat/route.ts
 import { google } from "@ai-sdk/google";
-import { streamText } from "ai";
+import { streamText, convertToModelMessages } from "ai";
 import { SYSTEM_PROMPT } from "@/lib/gemini";
 
 export const maxDuration = 60;
@@ -17,8 +17,8 @@ The homeowner has already received diagnoses for their home. Here is the context
 ${context}
 
 Answer their follow-up questions using this context. Cite specific evidence and diagnoses when relevant.`,
-    messages,
+    messages: await convertToModelMessages(messages),
   });
 
-  return result.toDataStreamResponse();
+  return result.toTextStreamResponse();
 }
