@@ -10,6 +10,7 @@ import { PhaseSelector } from "@/components/phase-selector";
 import { EvidenceUpload } from "@/components/evidence-upload";
 import type { EvidenceItem } from "@/components/evidence-upload";
 import { DiagnosisCard } from "@/components/diagnosis-card";
+import type { IssueStatus } from "@/components/diagnosis-card";
 import { ChatDrawer } from "@/components/chat-drawer";
 import { createClient } from "@/lib/supabase/client";
 import type { Diagnosis } from "@/types/diagnosis";
@@ -30,6 +31,7 @@ export default function HomeDashboard() {
   const [pastSessions, setPastSessions] = useState<SavedSession[]>([]);
   const [viewingSessionId, setViewingSessionId] = useState<string | null>(null);
   const [resetKey, setResetKey] = useState(0);
+  const [issueStatuses, setIssueStatuses] = useState<Record<string, IssueStatus>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,6 +58,14 @@ export default function HomeDashboard() {
     }
     loadSessions();
   }, [homeId]);
+
+  function getIssueKey(d: Diagnosis, i: number) {
+    return `${viewingSessionId || "new"}-${i}`;
+  }
+
+  function handleStatusChange(key: string, status: IssueStatus) {
+    setIssueStatuses((prev) => ({ ...prev, [key]: status }));
+  }
 
   const handleEvidenceChange = useCallback((items: EvidenceItem[]) => {
     setEvidence(items);
@@ -263,19 +273,28 @@ export default function HomeDashboard() {
               {critical.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-red-700 uppercase tracking-wide">Critical</h3>
-                  {critical.map((d, i) => <DiagnosisCard key={`c-${i}`} diagnosis={d} />)}
+                  {critical.map((d, i) => {
+                    const key = `c-${i}`;
+                    return <DiagnosisCard key={key} diagnosis={d} status={issueStatuses[key] || "to_do"} onStatusChange={(s) => handleStatusChange(key, s)} />;
+                  })}
                 </div>
               )}
               {moderate.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-yellow-700 uppercase tracking-wide">Moderate</h3>
-                  {moderate.map((d, i) => <DiagnosisCard key={`m-${i}`} diagnosis={d} />)}
+                  {moderate.map((d, i) => {
+                    const key = `m-${i}`;
+                    return <DiagnosisCard key={key} diagnosis={d} status={issueStatuses[key] || "to_do"} onStatusChange={(s) => handleStatusChange(key, s)} />;
+                  })}
                 </div>
               )}
               {minor.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-green-700 uppercase tracking-wide">Minor</h3>
-                  {minor.map((d, i) => <DiagnosisCard key={`n-${i}`} diagnosis={d} />)}
+                  {minor.map((d, i) => {
+                    const key = `n-${i}`;
+                    return <DiagnosisCard key={key} diagnosis={d} status={issueStatuses[key] || "to_do"} onStatusChange={(s) => handleStatusChange(key, s)} />;
+                  })}
                 </div>
               )}
             </section>

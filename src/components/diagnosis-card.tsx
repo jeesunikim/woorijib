@@ -1,8 +1,12 @@
 // src/components/diagnosis-card.tsx
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { Diagnosis } from "@/types/diagnosis";
+
+export type IssueStatus = "to_do" | "in_work" | "complete";
 
 const severityColors = {
   critical: "bg-red-100 text-red-800 border-red-200",
@@ -16,13 +20,40 @@ const urgencyLabels = {
   year_2_plus: "Year 2+",
 } as const;
 
-export function DiagnosisCard({ diagnosis }: { diagnosis: Diagnosis }) {
+const statusConfig = {
+  to_do: { label: "To Do", className: "bg-gray-100 text-gray-800 border-gray-200" },
+  in_work: { label: "In Work", className: "bg-blue-100 text-blue-800 border-blue-200" },
+  complete: { label: "Complete", className: "bg-green-100 text-green-800 border-green-200" },
+} as const;
+
+const statusOrder: IssueStatus[] = ["to_do", "in_work", "complete"];
+
+interface DiagnosisCardProps {
+  diagnosis: Diagnosis;
+  status?: IssueStatus;
+  onStatusChange?: (status: IssueStatus) => void;
+}
+
+export function DiagnosisCard({ diagnosis, status = "to_do", onStatusChange }: DiagnosisCardProps) {
+  function cycleStatus() {
+    if (!onStatusChange) return;
+    const currentIndex = statusOrder.indexOf(status);
+    const next = statusOrder[(currentIndex + 1) % statusOrder.length];
+    onStatusChange(next);
+  }
+
   return (
-    <Card className="p-6 space-y-4">
+    <Card className={`p-6 space-y-4 ${status === "complete" ? "opacity-60" : ""}`}>
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <h3 className="text-lg font-semibold">{diagnosis.issue}</h3>
         <div className="flex gap-2 shrink-0">
+          <Badge
+            className={`${statusConfig[status].className} cursor-pointer`}
+            onClick={cycleStatus}
+          >
+            {statusConfig[status].label}
+          </Badge>
           <Badge className={severityColors[diagnosis.severity]}>
             {diagnosis.severity}
           </Badge>
