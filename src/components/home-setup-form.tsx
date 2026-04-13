@@ -38,29 +38,31 @@ export function HomeSetupForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="address">Address</Label>
+        <Label htmlFor="address" className="text-sm font-medium text-foreground">Address</Label>
         <Input
           id="address"
           placeholder="123 Main St, Anytown, CA"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           required
+          className="h-12 bg-background border-border/80 focus:border-primary focus:ring-primary/20"
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="yearBuilt">Year Built</Label>
+        <Label htmlFor="yearBuilt" className="text-sm font-medium text-foreground">Year Built</Label>
         <Input
           id="yearBuilt"
           type="number"
           placeholder="1953"
           value={yearBuilt}
           onChange={(e) => setYearBuilt(e.target.value)}
+          className="h-12 bg-background border-border/80 focus:border-primary focus:ring-primary/20"
         />
       </div>
-      <Button type="submit" disabled={loading}>
-        {loading ? "Creating..." : "Create Home Profile"}
+      <Button type="submit" disabled={loading} className="w-full h-12 text-base font-medium">
+        {loading ? "Creating..." : "Get Started"}
       </Button>
     </form>
   );
