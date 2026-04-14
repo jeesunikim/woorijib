@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { ZipCodeLookup } from "@/components/zip-code-lookup";
 import { HomeSetupForm } from "@/components/home-setup-form";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { createClient } from "@/lib/supabase/client";
 
 type View = "zip" | "setup";
 
@@ -12,6 +15,10 @@ export default function Home() {
   const [zipCode, setZipCode] = useState("");
   const [hasVisited, setHasVisited] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [address, setAddress] = useState("");
+  const [addressLoading, setAddressLoading] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
 
   // Detect returning visitor via localStorage (only runs client-side)
   useEffect(() => {
@@ -19,6 +26,27 @@ export default function Home() {
     const visited = localStorage.getItem("woorijib_visited");
     if (visited) setHasVisited(true);
   }, []);
+
+  async function handleAddressSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!address.trim()) return;
+    setAddressLoading(true);
+    localStorage.setItem("woorijib_visited", "1");
+
+    const { data, error } = await supabase
+      .from("homes")
+      .insert({ address: address.trim(), phase: "inspection_complete" })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating home:", error);
+      setAddressLoading(false);
+      return;
+    }
+
+    router.push(`/home/${data.id}`);
+  }
 
   function handleZipComplete(zip: string) {
     setZipCode(zip);
@@ -96,7 +124,7 @@ export default function Home() {
             /* Zip Code Lookup View */
             <div className="space-y-10">
               {/* Hero */}
-              <div className="text-center space-y-4 max-w-2xl mx-auto">
+              <div className="text-center space-y-6 max-w-2xl mx-auto">
                 <p className="text-sm font-medium text-primary uppercase tracking-wider">
                   Your AI Home Diagnosis Agent
                 </p>
@@ -104,12 +132,35 @@ export default function Home() {
                   What&apos;s really wrong with your home?
                 </h1>
                 <p className="text-lg text-muted-foreground leading-relaxed text-pretty">
-                  That scary inspection report might just list issues that are completely normal for homes in your area. Enter your zip code to find out.
+                  That scary inspection report might just list issues that are completely normal for homes in your area.
                 </p>
+
+                {/* Address input — primary free trial CTA */}
+                <form onSubmit={handleAddressSubmit} className="flex gap-2 max-w-lg mx-auto pt-2">
+                  <div className="relative flex-1">
+                    <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                    </svg>
+                    <Input
+                      placeholder="Enter your home address"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      className="pl-10 h-12 bg-card border-border/80 text-base"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    disabled={addressLoading || !address.trim()}
+                    className="h-12 px-5 text-base font-medium shrink-0"
+                  >
+                    {addressLoading ? "Starting..." : "Try free"}
+                  </Button>
+                </form>
+                <p className="text-xs text-muted-foreground">No account needed &mdash; start in seconds</p>
 
                 {/* Returning user skip prompt */}
                 {mounted && hasVisited && (
-                  <p className="text-sm text-muted-foreground pt-2">
+                  <p className="text-sm text-muted-foreground">
                     Been here before?{" "}
                     <button
                       onClick={handleSkipToSetup}
@@ -119,6 +170,13 @@ export default function Home() {
                     </button>
                   </p>
                 )}
+              </div>
+
+              {/* Divider */}
+              <div className="flex items-center gap-4 max-w-2xl mx-auto">
+                <div className="flex-1 h-px bg-border/60" />
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">or explore your area first</span>
+                <div className="flex-1 h-px bg-border/60" />
               </div>
 
               {/* Zip Code Component */}
