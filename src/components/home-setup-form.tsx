@@ -7,8 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 
-export function HomeSetupForm() {
-  const [address, setAddress] = useState("");
+interface HomeSetupFormProps {
+  defaultZip?: string;
+}
+
+export function HomeSetupForm({ defaultZip }: HomeSetupFormProps) {
+  const [address, setAddress] = useState(defaultZip ? `, ${defaultZip}` : "");
   const [yearBuilt, setYearBuilt] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
