@@ -11,9 +11,11 @@ export default function Home() {
   const [view, setView] = useState<View>("zip");
   const [zipCode, setZipCode] = useState("");
   const [hasVisited, setHasVisited] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  // Detect returning visitor via localStorage
+  // Detect returning visitor via localStorage (only runs client-side)
   useEffect(() => {
+    setMounted(true);
     const visited = localStorage.getItem("woorijib_visited");
     if (visited) setHasVisited(true);
   }, []);
@@ -65,7 +67,7 @@ export default function Home() {
             )}
 
             {/* "Analyze my inspection" shortcut for returning users */}
-            {hasVisited && view === "zip" && (
+            {mounted && hasVisited && view === "zip" && (
               <Button
                 variant="outline"
                 size="sm"
@@ -106,7 +108,7 @@ export default function Home() {
                 </p>
 
                 {/* Returning user skip prompt */}
-                {hasVisited && (
+                {mounted && hasVisited && (
                   <p className="text-sm text-muted-foreground pt-2">
                     Been here before?{" "}
                     <button
