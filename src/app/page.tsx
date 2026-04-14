@@ -122,9 +122,9 @@ export default function Home() {
         <div className="max-w-4xl mx-auto">
           {view === "zip" ? (
             /* Zip Code Lookup View */
-            <div className="space-y-10">
+            <div className="space-y-12">
               {/* Hero */}
-              <div className="text-center space-y-6 max-w-2xl mx-auto">
+              <div className="text-center space-y-4 max-w-2xl mx-auto">
                 <p className="text-sm font-medium text-primary uppercase tracking-wider">
                   Your AI Home Diagnosis Agent
                 </p>
@@ -132,31 +132,8 @@ export default function Home() {
                   What&apos;s really wrong with your home?
                 </h1>
                 <p className="text-lg text-muted-foreground leading-relaxed text-pretty">
-                  That scary inspection report might just list issues that are completely normal for homes in your area.
+                  That scary inspection report might just list issues that are completely normal for homes in your area. Enter your zip code to find out.
                 </p>
-
-                {/* Address input — primary free trial CTA */}
-                <form onSubmit={handleAddressSubmit} className="flex gap-2 max-w-lg mx-auto pt-2">
-                  <div className="relative flex-1">
-                    <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                    </svg>
-                    <Input
-                      placeholder="Enter your home address"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      className="pl-10 h-12 bg-card border-border/80 text-base"
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    disabled={addressLoading || !address.trim()}
-                    className="h-12 px-5 text-base font-medium shrink-0"
-                  >
-                    {addressLoading ? "Starting..." : "Try free"}
-                  </Button>
-                </form>
-                <p className="text-xs text-muted-foreground">No account needed &mdash; start in seconds</p>
 
                 {/* Returning user skip prompt */}
                 {mounted && hasVisited && (
@@ -172,15 +149,46 @@ export default function Home() {
                 )}
               </div>
 
+              {/* Zip Code Component */}
+              <ZipCodeLookup onComplete={handleZipComplete} />
+
               {/* Divider */}
               <div className="flex items-center gap-4 max-w-2xl mx-auto">
                 <div className="flex-1 h-px bg-border/60" />
-                <span className="text-xs text-muted-foreground uppercase tracking-wider">or explore your area first</span>
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">or start analyzing right now</span>
                 <div className="flex-1 h-px bg-border/60" />
               </div>
 
-              {/* Zip Code Component */}
-              <ZipCodeLookup onComplete={handleZipComplete} />
+              {/* Quick start — address input */}
+              <div className="bg-card rounded-xl border border-border/60 p-6 max-w-2xl mx-auto">
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-foreground">Ready to analyze your inspection?</h3>
+                    <p className="text-sm text-muted-foreground">Enter your address to get started without the wait</p>
+                  </div>
+                  <form onSubmit={handleAddressSubmit} className="flex gap-2">
+                    <div className="relative flex-1">
+                      <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                      </svg>
+                      <Input
+                        placeholder="123 Main St, Anytown, CA"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        className="pl-10 h-11 bg-background border-border/80"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={addressLoading || !address.trim()}
+                      className="px-5 font-medium shrink-0"
+                    >
+                      {addressLoading ? "Starting..." : "Analyze"}
+                    </Button>
+                  </form>
+                  <p className="text-xs text-muted-foreground text-center">No account needed</p>
+                </div>
+              </div>
             </div>
           ) : (
             /* Home Setup View */
