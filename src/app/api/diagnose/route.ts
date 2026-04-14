@@ -79,7 +79,6 @@ export async function POST(req: Request) {
 
   return Response.json(output);
 }
-}
 
 function getMimeType(type: string, path: string): string {
   const ext = path.split(".").pop()?.toLowerCase();
