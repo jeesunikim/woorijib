@@ -1,7 +1,10 @@
 // src/components/diagnosis-card.tsx
 "use client";
 
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { EmailComposer } from "@/components/email-composer";
 import type { Diagnosis } from "@/types/diagnosis";
 
 export type IssueStatus = "to_do" | "in_work" | "complete";
@@ -45,9 +48,11 @@ interface DiagnosisCardProps {
   diagnosis: Diagnosis;
   status?: IssueStatus;
   onStatusChange?: (status: IssueStatus) => void;
+  homeAddress?: string;
 }
 
-export function DiagnosisCard({ diagnosis, status = "to_do", onStatusChange }: DiagnosisCardProps) {
+export function DiagnosisCard({ diagnosis, status = "to_do", onStatusChange, homeAddress = "" }: DiagnosisCardProps) {
+  const [emailOpen, setEmailOpen] = useState(false);
   function cycleStatus() {
     if (!onStatusChange) return;
     const currentIndex = statusOrder.indexOf(status);
@@ -168,6 +173,30 @@ export function DiagnosisCard({ diagnosis, status = "to_do", onStatusChange }: D
           </div>
         </div>
       )}
+
+      {/* Email Actions */}
+      <div className="px-5 py-4 bg-background border-t border-border/40 flex items-center justify-between">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Take Action</p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setEmailOpen(true)}
+          className="gap-1.5 text-xs h-8"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          Draft Email
+        </Button>
+      </div>
+
+      {/* Email Composer Modal */}
+      <EmailComposer
+        open={emailOpen}
+        onOpenChange={setEmailOpen}
+        diagnosis={diagnosis}
+        homeAddress={homeAddress}
+      />
     </div>
   );
 }
