@@ -32,10 +32,21 @@ export default function HomeDashboard() {
   const [issueStatuses, setIssueStatuses] = useState<Record<string, IssueStatus>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [homeAddress, setHomeAddress] = useState("");
 
-  // Load all saved diagnosis sessions on mount
+  // Load home details and saved diagnosis sessions on mount
   useEffect(() => {
-    async function loadSessions() {
+    async function loadData() {
+      // Load home address
+      const { data: homeData } = await supabase
+        .from("homes")
+        .select("address")
+        .eq("id", homeId)
+        .single();
+
+      if (homeData) setHomeAddress(homeData.address);
+
+      // Load diagnosis sessions
       const { data } = await supabase
         .from("diagnoses")
         .select("id, result, created_at")
@@ -54,7 +65,7 @@ export default function HomeDashboard() {
         setViewingSessionId(sessions[0].id);
       }
     }
-    loadSessions();
+    loadData();
   }, [homeId]);
 
   function handleStatusChange(key: string, status: IssueStatus) {
@@ -320,10 +331,10 @@ export default function HomeDashboard() {
                     <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">Critical Issues</h3>
                   </div>
                   <div className="space-y-4">
-                    {critical.map((d, i) => {
-                      const key = `c-${i}`;
-                      return <DiagnosisCard key={key} diagnosis={d} status={issueStatuses[key] || "to_do"} onStatusChange={(s) => handleStatusChange(key, s)} />;
-                    })}
+                  {critical.map((d, i) => {
+                    const key = `c-${i}`;
+                    return <DiagnosisCard key={key} diagnosis={d} status={issueStatuses[key] || "to_do"} onStatusChange={(s) => handleStatusChange(key, s)} homeAddress={homeAddress} />;
+                  })}
                   </div>
                 </div>
               )}
@@ -334,10 +345,10 @@ export default function HomeDashboard() {
                     <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">Moderate Issues</h3>
                   </div>
                   <div className="space-y-4">
-                    {moderate.map((d, i) => {
-                      const key = `m-${i}`;
-                      return <DiagnosisCard key={key} diagnosis={d} status={issueStatuses[key] || "to_do"} onStatusChange={(s) => handleStatusChange(key, s)} />;
-                    })}
+                  {moderate.map((d, i) => {
+                    const key = `m-${i}`;
+                    return <DiagnosisCard key={key} diagnosis={d} status={issueStatuses[key] || "to_do"} onStatusChange={(s) => handleStatusChange(key, s)} homeAddress={homeAddress} />;
+                  })}
                   </div>
                 </div>
               )}
@@ -348,10 +359,10 @@ export default function HomeDashboard() {
                     <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">Minor Issues</h3>
                   </div>
                   <div className="space-y-4">
-                    {minor.map((d, i) => {
-                      const key = `n-${i}`;
-                      return <DiagnosisCard key={key} diagnosis={d} status={issueStatuses[key] || "to_do"} onStatusChange={(s) => handleStatusChange(key, s)} />;
-                    })}
+                  {minor.map((d, i) => {
+                    const key = `n-${i}`;
+                    return <DiagnosisCard key={key} diagnosis={d} status={issueStatuses[key] || "to_do"} onStatusChange={(s) => handleStatusChange(key, s)} homeAddress={homeAddress} />;
+                  })}
                   </div>
                 </div>
               )}
